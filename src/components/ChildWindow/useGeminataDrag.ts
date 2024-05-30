@@ -37,7 +37,7 @@ export function useGeminataDrag(
     event.preventDefault();
 
     const rect = movableElement.value!.getBoundingClientRect();
-    console.log(event.clientY, rect.y);
+
     dragState.value = {
       x: event.clientX,
       y: event.clientY,

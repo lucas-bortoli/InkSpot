@@ -9,6 +9,13 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
+defineProps({
+  minWidth: { type: Number, default: 192 },
+  minHeight: { type: Number, default: 192 },
+  maxWidth: { type: Number, default: 480 },
+  maxHeight: { type: Number, default: 480 },
+});
+
 const $window = ref<HTMLDivElement>();
 const $titleBar = ref<HTMLDivElement>();
 const $resizeArea = ref<HTMLDivElement>();
@@ -24,12 +31,22 @@ function handleCloseButton() {
 
 <template>
   <Teleport to="body">
-    <div ref="$window" class="fixed left-4 top-4 h-0 min-h-48 w-0 min-w-48">
+    <div
+      ref="$window"
+      class="fixed left-4 top-4 h-0 min-h-48 w-0 min-w-48"
+      :style="{
+        'min-width': `${minWidth}px`,
+        'min-height': `${minHeight}px`,
+        'max-width': `${maxWidth}px`,
+        'max-height': `${maxHeight}px`,
+      }"
+    >
       <div
-        class="flex select-none items-center rounded-t-xl border-2 border-b-0 bg-zinc-100 p-1 pl-2"
+        class="flex select-none items-center rounded-t-xl border-2 border-b-0 bg-zinc-100 p-1 pl-4"
         ref="$titleBar"
       >
-        <div class="pointer-events-none grow text-zinc-700">
+        <slot name="icon"></slot>
+        <div class="pointer-events-none ml-2 grow text-sm text-zinc-700 first:ml-0">
           <slot name="title">Form</slot>
         </div>
         <div class="flex shrink-0 gap-2">
