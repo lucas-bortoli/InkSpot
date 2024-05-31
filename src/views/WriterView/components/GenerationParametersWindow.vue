@@ -8,11 +8,18 @@ import Input from "@/components/ui/input/Input.vue";
 import RadioGroup from "@/components/ui/radio-group/RadioGroup.vue";
 import RadioGroupItem from "@/components/ui/radio-group/RadioGroupItem.vue";
 import IconElement from "@/components/IconElement.vue";
+import {
+  useGenerationParametersStore,
+  type GenerationParameters,
+} from "@/stores/generationParameters";
 
 defineEmits<{
   (e: "close"): void;
 }>();
 
+const paramsStore = useGenerationParametersStore();
+
+// These initial values don't matter, we immediately override them
 const temperature = ref([0.6]);
 const topK = ref([40]);
 const minP = ref([0.05]);
@@ -24,19 +31,71 @@ const repetitionPenalty = ref([1.1]);
 const repetitionPenaltyLastN = ref([64]);
 const repPenalizeNewline = ref(true);
 
+// Initially, use use values from store in the UI
+setValues(paramsStore.parameters);
+
+function setValues(vals: GenerationParameters) {
+  paramsStore.parameters = vals;
+  temperature.value = [vals.temperature];
+  topK.value = [vals.topK ?? 0];
+  minP.value = [vals.minP ?? 0];
+  mirostat.value = [vals.mirostat?.version ?? 0];
+  mirostatEta.value = [vals.mirostat?.learningRate ?? 0.1];
+  mirostatTau.value = [vals.mirostat?.targetEntropy ?? 5.0];
+  seed.value = vals.seed ?? -1;
+  repetitionPenalty.value = [vals.repetitionPenalty?.penalty ?? 1.1];
+  repetitionPenaltyLastN.value = (() => {
+    if (vals.repetitionPenalty === null) return [0];
+    if (vals.repetitionPenalty.type === "whole_context") return [-1];
+    return [vals.repetitionPenalty.lastNTokens];
+  })();
+  repPenalizeNewline.value = vals.repetitionPenalty?.penalizeNewlines ?? true;
+}
+
+// Sync values with the store when the UI changes
+// We don't use the store directly in the component because shadcn sliders expect an array for their v-model value
 watchEffect(() => {
-  console.log({
+  const newParams: GenerationParameters = {
     temperature: temperature.value[0],
-    topK: topK.value[0],
-    minP: minP.value[0],
-    seed: seed.value,
-    mirostat: mirostat.value[0],
-    mirostatEta: mirostatEta.value[0],
-    mirostatTau: mirostatTau.value[0],
-    repetitionPenalty: repetitionPenalty.value[0],
-    repetitionPenaltyLastN: repetitionPenaltyLastN.value[0],
-    repPenalizeNewline: repPenalizeNewline.value,
-  });
+    topK: topK.value[0] === 0 ? null : topK.value[0],
+    minP: minP.value[0] === 0 ? null : minP.value[0],
+    mirostat:
+      mirostat.value[0] === 0
+        ? null
+        : {
+            version: mirostat.value[0],
+            learningRate: mirostatEta.value[0],
+            targetEntropy: mirostatTau.value[0],
+          },
+    repetitionPenalty: (() => {
+      // unconditionally access the values so Vue can react to them in this watcher
+      const penalty = repetitionPenalty.value[0];
+      const lastNTokens = repetitionPenaltyLastN.value[0];
+      const penalizeNewlines = repPenalizeNewline.value;
+
+      switch (lastNTokens) {
+        case 0:
+          return null;
+        case -1:
+          return {
+            type: "whole_context",
+            penalty,
+            penalizeNewlines,
+          };
+        default:
+          return {
+            type: "last_n_tokens",
+            lastNTokens,
+            penalty,
+            penalizeNewlines,
+          };
+      }
+    })(),
+    seed: seed.value === -1 ? null : seed.value,
+  };
+
+  paramsStore.parameters = newParams;
+  console.log(newParams);
 });
 </script>
 
@@ -45,15 +104,24 @@ watchEffect(() => {
     :min-width="410"
     :min-height="400"
     :max-width="480"
-    :max-height="9999"
+    :max-height="570"
     @close="$emit('close')"
   >
     <template #icon>
       <IconElement icon="settings" />
     </template>
+    <template #extra-buttons>
+      <button
+        class="flex items-center justify-center rounded-lg bg-zinc-200 p-1"
+        @click="setValues(paramsStore.defaultParameters)"
+        title="Reset values"
+      >
+        <IconElement icon="reloadXml" />
+      </button>
+    </template>
     <template #title> Set up generation parameters </template>
     <template #default>
-      <form @submit="() => false" class="grid grid-cols-2 gap-x-4 gap-y-6 p-4">
+      <form @submit="() => false" class="grid select-none grid-cols-2 gap-x-4 gap-y-6 p-4">
         <h1 class="col-span-full">Sampling</h1>
         <div class="col-span-full flex flex-col gap-2">
           <Label class="flex items-start gap-2">
@@ -64,11 +132,11 @@ watchEffect(() => {
         </div>
         <div class="flex flex-col gap-2">
           <Label class="flex items-start gap-2">
-            <Checkbox :checked="topK[0] !== -1" @update:checked="(e) => (topK = [e ? 40 : -1])" />
+            <Checkbox :checked="topK[0] !== 0" @update:checked="(e) => (topK = [e ? 40 : 0])" />
             <span class="grow">Top-K sampling</span>
-            <span class="text-zinc-500" v-if="topK[0] !== -1">{{ topK[0] }}</span>
+            <span class="text-zinc-500" v-if="topK[0] !== 0">{{ topK[0] }}</span>
           </Label>
-          <Slider v-if="topK[0] !== -1" v-model="topK" :min="0" :max="100" :step="1" />
+          <Slider v-if="topK[0] !== 0" v-model="topK" :min="1" :max="100" :step="1" />
         </div>
         <div class="flex flex-col gap-2">
           <Label class="flex items-start gap-2">
@@ -179,7 +247,11 @@ watchEffect(() => {
         </div>
         <div v-if="repetitionPenaltyLastN[0] !== 0" class="col-span-full flex flex-col gap-2">
           <Label class="flex items-start gap-2">
-            <Checkbox v-model="repPenalizeNewline" />
+            <!-- v-model doesn't work for this, for some reason -->
+            <Checkbox
+              :checked="repPenalizeNewline"
+              @update:checked="(v) => (repPenalizeNewline = v)"
+            />
             <span class="grow">Penalize newlines</span>
           </Label>
         </div>

@@ -82,4 +82,5 @@ body,
 #app {
   width: 100lvw;
   height: 100lvh;
+  overflow: hidden;
 }
