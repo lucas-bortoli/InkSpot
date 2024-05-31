@@ -1,7 +1,7 @@
 import { Logger } from "./logger";
 import type z from "zod";
 
-const LLAMAFILE_SERVER = "http://pathfinder:5003/proxy";
+const LLAMAFILE_SERVER = "http://pathfinder:5003";
 const logger = new Logger("llm");
 
 export interface CompletionOptions {
@@ -50,7 +50,7 @@ class RequestQueue {
   }
 
   private async processQueue() {
-    if (this.isProcessing) return;
+    //if (this.isProcessing) return;
     this.isProcessing = true;
 
     while (this.queue.length > 0) {
