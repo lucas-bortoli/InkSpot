@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { nextTick, ref } from "vue";
 import SuggestionBox from "./SuggestionBox.vue";
 
 const emit = defineEmits<{
@@ -54,6 +54,21 @@ function onEditorKeyUp(e: KeyboardEvent) {
 
     const suggestion = suggBox.value?.applySelectedSuggestion() ?? null;
     suggBox.value?.hide();
+
+    if (suggestion) {
+      setContent(getContent() + suggestion);
+      suggBox.value?.refreshSuggestions(getContent());
+
+      nextTick(() => {
+        var range = document.createRange();
+        range.selectNodeContents(editor.value!);
+        range.collapse(false);
+        var sel = window.getSelection()!;
+        sel.removeAllRanges();
+        sel.addRange(range);
+        suggBox.value?.show();
+      });
+    }
   } else if (e.code === "Escape") {
     e.preventDefault();
     suggBox.value?.hide();
@@ -73,12 +88,12 @@ defineExpose({
 <template>
   <main
     class="editor mx-auto mt-24 min-h-screen w-full max-w-screen-lg whitespace-pre-wrap p-16 font-mono shadow-xl outline-none"
-    contenteditable
     ref="editor"
     v-on:input="onEditorInput"
     @keyup="onEditorKeyUp"
     @keydown="onEditorKeyDown"
     @blur="onEditorBlur"
+    contenteditable
   ></main>
   <SuggestionBox ref="suggBox" />
 </template>

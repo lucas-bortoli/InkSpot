@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { getTextCaretTopPoint } from "@/lib/caret";
 import { computed, ref } from "vue";
+import * as llm from "@/lib/llm";
+import { useGenerationParametersStore } from "@/stores/generationParameters";
 
+const generationParametersStore = useGenerationParametersStore();
 const suggestionWindow = ref<HTMLElement>();
 
 const position = ref<{ top: number; left: number } | null>(null);
@@ -13,9 +16,46 @@ const currentSelection = computed<string | null>(
   () => suggestions.value[selectionIndex.value] ?? null
 );
 
+let currentAbortController: AbortController | null = null;
+
 async function refreshSuggestions(content: string) {
+  if (currentAbortController) {
+    currentAbortController.abort();
+  }
+
+  const abortController = new AbortController();
+  currentAbortController = abortController;
+
   suggestions.value = [];
   selectionIndex.value = 0;
+
+  for (let i = 0; i <= 2; i++) {
+    const params = generationParametersStore.formatToApi(generationParametersStore.parameters);
+
+    try {
+      const suggestion = await llm.requestCompletion(
+        {
+          ...params,
+          prompt: content,
+          n_predict: 8,
+        },
+        abortController.signal
+      );
+
+      suggestions.value.push(suggestion);
+    } catch (error) {
+      if ((error as Error).name === "AbortError") {
+        console.log("Previous request aborted");
+      } else {
+        console.error("Error in requestCompletion:", error);
+      }
+      break; // Stop the loop if aborted
+    }
+  }
+
+  if (currentAbortController === abortController) {
+    currentAbortController = null;
+  }
 }
 
 function applySelectedSuggestion(): string | null {
@@ -29,7 +69,6 @@ function applySelectedSuggestion(): string | null {
 
 function updateWindowPosition() {
   const caret = getTextCaretTopPoint();
-  console.log(caret);
 
   if (!caret || caret.left < 250) return hide();
 

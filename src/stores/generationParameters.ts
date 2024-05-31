@@ -1,5 +1,6 @@
 import { ref } from "vue";
 import { defineStore } from "pinia";
+import type { CompletionOptions as LlamaCppCompletionOptions } from "@/lib/llm";
 
 export interface GenerationParameters {
   temperature: number;
@@ -34,5 +35,30 @@ export const useGenerationParametersStore = defineStore("generation_parameters",
 
   const parameters = ref<GenerationParameters>(defaultParameters);
 
-  return { defaultParameters, parameters };
+  function formatToApi(params: GenerationParameters): Omit<LlamaCppCompletionOptions, "prompt"> {
+    return {
+      temperature: params.temperature,
+      top_k: params.topK ?? 0,
+      min_p: params.minP ?? 0,
+      mirostat: params.mirostat?.version ?? 0,
+      mirostat_eta: params.mirostat?.learningRate,
+      mirostat_tau: params.mirostat?.targetEntropy,
+      seed: params.seed ?? -1,
+      repeat_penalty: params.repetitionPenalty?.penalty ?? 1.1,
+      repeat_last_n: (() => {
+        switch (params.repetitionPenalty?.type) {
+          case "last_n_tokens":
+            return params.repetitionPenalty.lastNTokens;
+          case "whole_context":
+            return -1;
+          default:
+            // disabled repetition penalty
+            return 0;
+        }
+      })(),
+      penalize_nl: params.repetitionPenalty?.penalizeNewlines ?? false,
+    };
+  }
+
+  return { defaultParameters, parameters, formatToApi };
 });
