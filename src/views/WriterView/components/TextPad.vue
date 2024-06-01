@@ -1,32 +1,24 @@
 <script setup lang="ts">
 import { nextTick, ref } from "vue";
 import SuggestionBox from "./SuggestionBox.vue";
+import ColoredTextArea, { type SyntaxHighlightRule } from "./ColoredTextArea.vue";
 
 const emit = defineEmits<{
   (e: "input", content: string): void;
 }>();
 
-const editor = ref<HTMLElement>();
+const value = ref("");
 const suggBox = ref<InstanceType<typeof SuggestionBox>>();
 
 function getContent(): string {
-  const $editor = editor.value;
-  if (!$editor) return "";
-
-  return $editor.innerText.replace(/\r?\n$/, "");
+  return value.value;
 }
 
 function setContent(content: string) {
-  const $editor = editor.value;
-  if (!$editor) return;
-
-  $editor.innerText = content;
+  value.value = content;
 }
 
 function onEditorInput(e: Event) {
-  const $editor = editor.value;
-  if (!$editor || e.target !== $editor) return;
-
   emit("input", getContent());
 }
 
@@ -62,15 +54,16 @@ function onSuggestionSelected(suggestion: string | null) {
   suggBox.value?.refreshSuggestions();
 
   nextTick(() => {
+    /*
     var range = document.createRange();
     range.selectNodeContents(editor.value!);
     range.collapse(false);
     var sel = window.getSelection()!;
     sel.removeAllRanges();
-    sel.addRange(range);
+    sel.addRange(range);*/
     suggBox.value?.show();
 
-    editor.value?.parentElement?.scrollBy({ behavior: "smooth", top: 99999 });
+    // editor.value?.parentElement?.scrollBy({ behavior: "smooth", top: 99999 });
   });
 }
 
@@ -78,9 +71,23 @@ defineExpose({
   setContent,
   getContent,
 });
+
+const rules: SyntaxHighlightRule[] = [
+  {
+    keywords: [
+      "<|begin_of_text|>",
+      "<|eot_id|>",
+      "<|start_header_id|>",
+      "<|end_header_id|>",
+      "<|end_of_text|>",
+    ],
+    style: "color: green; font-weight: bold;",
+  },
+];
 </script>
 
 <template>
+  <!--
   <main
     class="editor mx-auto mt-24 min-h-screen w-full max-w-screen-lg whitespace-pre-wrap p-16 font-mono shadow-xl outline-none"
     ref="editor"
@@ -88,6 +95,14 @@ defineExpose({
     @keyup="onEditorKeyUp"
     @keydown="onEditorKeyDown"
     contenteditable></main>
+  -->
+  <ColoredTextArea
+    class="mx-auto block min-h-screen w-full max-w-screen-lg p-16 shadow-xl"
+    :syntax-highlight-rules="rules"
+    v-model="value"
+    @input="onEditorInput"
+    @keydown="onEditorKeyDown"
+    @keyup="onEditorKeyUp" />
   <SuggestionBox
     ref="suggBox"
     @suggestion-selected="onSuggestionSelected"
