@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { getTextCaretTopPoint } from "@/lib/caret";
 import { computed, ref } from "vue";
 import * as llm from "@/lib/llm";
 import { useGenerationParametersStore } from "@/stores/generationParameters";
+import ChildWindow from "@/components/ChildWindow/ChildWindow.vue";
+import IconElement from "@/components/IconElement.vue";
+
+const props = defineProps<{
+  getContent: () => string;
+}>();
 
 const generationParametersStore = useGenerationParametersStore();
-const suggestionWindow = ref<HTMLElement>();
-
-const position = ref<{ top: number; left: number } | null>(null);
 const isShown = ref(true);
 const suggestions = ref<string[]>(["Flash", "Bang", "Alakazam"]);
 const selectionIndex = ref(0);
@@ -16,9 +18,13 @@ const currentSelection = computed<string | null>(
   () => suggestions.value[selectionIndex.value] ?? null
 );
 
+const emit = defineEmits<{
+  (e: "suggestionSelected", suggestion: string | null): void;
+}>();
+
 let currentAbortController: AbortController | null = null;
 
-async function refreshSuggestions(content: string) {
+async function refreshSuggestions() {
   if (currentAbortController) {
     currentAbortController.abort();
   }
@@ -36,7 +42,7 @@ async function refreshSuggestions(content: string) {
       const suggestion = await llm.requestCompletion(
         {
           ...params,
-          prompt: content,
+          prompt: props.getContent(),
           n_predict: 8,
         },
         abortController.signal
@@ -58,24 +64,15 @@ async function refreshSuggestions(content: string) {
   }
 }
 
-function applySelectedSuggestion(): string | null {
-  const suggestion = suggestions.value[selectionIndex.value] ?? null;
-
+function selectSuggestion(
+  suggestion = suggestions.value[selectionIndex.value] ?? null
+): string | null {
   suggestions.value = [];
   selectionIndex.value = 0;
 
+  emit("suggestionSelected", suggestion ?? null);
+
   return suggestion;
-}
-
-function updateWindowPosition() {
-  const caret = getTextCaretTopPoint();
-
-  if (!caret || caret.left < 250) return hide();
-
-  position.value = {
-    top: caret.top + 20,
-    left: caret.left,
-  };
 }
 
 function scrollSelection(offset: -1 | 1) {
@@ -87,46 +84,47 @@ function scrollSelection(offset: -1 | 1) {
 
 function show() {
   isShown.value = true;
-  updateWindowPosition();
 }
 
 function hide() {
-  position.value = null;
   isShown.value = false;
 }
 
 defineExpose({
   isShown,
   currentSelection,
-  applySelectedSuggestion,
+  selectSuggestion,
   refreshSuggestions,
   scrollSelection,
-  updateWindowPosition,
   show,
   hide,
 });
 </script>
 
 <template>
-  <div
-    ref="suggestionWindow"
-    class="fixed flex w-screen max-w-64 select-none flex-col gap-2 rounded-md border bg-white py-2"
-    :style="{
-      visibility: isShown ? 'visible' : 'hidden',
-      top: `${position?.top}px`,
-      left: `${position?.left}px`,
-    }"
-  >
-    <span class="px-2 text-sm">Text suggestions</span>
-    <ol>
-      <li
-        v-for="(sug, index) in suggestions"
-        :key="sug"
-        :class="{ 'bg-zinc-100 font-bold': selectionIndex === index }"
-        class="cursor-pointer px-2 font-mono hover:bg-zinc-100"
-      >
-        {{ sug }}
-      </li>
-    </ol>
-  </div>
+  <ChildWindow :visible="isShown" @close="hide()" :min-width="360">
+    <template #title>Suggestions</template>
+    <template #extra-buttons>
+      <button
+        class="flex items-center justify-center gap-1 rounded-lg bg-zinc-200 p-1 capitalize"
+        style="font-size: 12px; line-height: 0"
+        @click="refreshSuggestions()"
+        title="Refresh suggestions">
+        <IconElement icon="refresh" />
+        Refresh
+      </button>
+    </template>
+    <template #default>
+      <ol>
+        <li
+          v-for="(sug, index) in suggestions"
+          :key="sug"
+          @click="selectSuggestion(sug)"
+          :class="{ 'bg-zinc-100 font-bold': selectionIndex === index }"
+          class="cursor-pointer select-none whitespace-pre-wrap px-2 py-2 font-mono text-sm hover:bg-zinc-100">
+          {{ sug }}
+        </li>
+      </ol>
+    </template>
+  </ChildWindow>
 </template>

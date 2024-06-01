@@ -17,6 +17,10 @@ import AccordionItem from "@/components/ui/accordion/AccordionItem.vue";
 import AccordionTrigger from "@/components/ui/accordion/AccordionTrigger.vue";
 import AccordionContent from "@/components/ui/accordion/AccordionContent.vue";
 
+defineProps<{
+  visible: boolean;
+}>();
+
 defineEmits<{
   (e: "close"): void;
 }>();
@@ -110,18 +114,18 @@ watchEffect(() => {
     :min-height="400"
     :max-width="480"
     :max-height="570"
-    @close="$emit('close')"
-  >
+    :visible="visible"
+    @close="$emit('close')">
     <template #icon>
       <IconElement icon="settings" />
     </template>
     <template #extra-buttons>
       <button
-        class="flex items-center justify-center rounded-lg bg-zinc-200 p-1"
+        class="flex items-center justify-center gap-1 rounded-lg bg-zinc-200 p-1 capitalize"
+        style="font-size: 12px; line-height: 0"
         @click="setValues(paramsStore.defaultParameters)"
-        title="Reset values"
-      >
-        <IconElement icon="reloadXml" />
+        title="Reset values">
+        <IconElement icon="reloadXml" />Reset
       </button>
     </template>
     <template #title> Set up generation parameters </template>
@@ -142,8 +146,7 @@ watchEffect(() => {
                 <Label class="flex items-start gap-2">
                   <Checkbox
                     :checked="topK[0] !== 0"
-                    @update:checked="(e) => (topK = [e ? 40 : 0])"
-                  />
+                    @update:checked="(e) => (topK = [e ? 40 : 0])" />
                   <span class="grow">Top-K sampling</span>
                   <span class="text-zinc-500" v-if="topK[0] !== 0">{{ topK[0] }}</span>
                 </Label>
@@ -153,8 +156,7 @@ watchEffect(() => {
                 <Label class="flex items-start gap-2">
                   <Checkbox
                     :checked="minP[0] !== 0.0"
-                    @update:checked="(e) => (minP = [e ? 0.05 : 0])"
-                  />
+                    @update:checked="(e) => (minP = [e ? 0.05 : 0])" />
                   <span class="grow">Min-P sampling</span>
                   <span class="text-zinc-500" v-if="minP[0] !== 0">{{ minP[0].toFixed(2) }}</span>
                 </Label>
@@ -164,15 +166,13 @@ watchEffect(() => {
                 <Label class="flex items-start gap-2">
                   <Checkbox
                     :checked="mirostat[0] !== 0"
-                    @update:checked="(e) => (mirostat = [e ? 2 : 0])"
-                  />
+                    @update:checked="(e) => (mirostat = [e ? 2 : 0])" />
                   <span class="grow">Mirostat sampling</span>
                 </Label>
                 <RadioGroup
                   v-if="mirostat[0] !== 0"
                   @update:modelValue="(e) => (mirostat = [parseInt(e) as 1 | 2])"
-                  :model-value="mirostat[0].toString()"
-                >
+                  :model-value="mirostat[0].toString()">
                   <Label class="flex items-start gap-2">
                     <RadioGroupItem id="mirostat-1" value="1" />
                     <span class="grow">Mirostat</span>
@@ -201,8 +201,7 @@ watchEffect(() => {
                 <Label class="flex items-start gap-2">
                   <Checkbox
                     :checked="seed !== -1"
-                    @update:checked="(e) => (seed = e ? Date.now() : -1)"
-                  />
+                    @update:checked="(e) => (seed = e ? Date.now() : -1)" />
                   <span class="grow">Use a predetermined RNG seed</span>
                 </Label>
                 <Input
@@ -211,8 +210,7 @@ watchEffect(() => {
                   v-model="seed"
                   :min="0"
                   :max="999999999999999"
-                  :step="1"
-                />
+                  :step="1" />
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -223,8 +221,7 @@ watchEffect(() => {
                 <Label class="flex items-start gap-2">
                   <Checkbox
                     :checked="repetitionPenaltyLastN[0] !== 0"
-                    @update:checked="(e) => (repetitionPenaltyLastN = [e ? 64 : 0])"
-                  />
+                    @update:checked="(e) => (repetitionPenaltyLastN = [e ? 64 : 0])" />
                   <span class="grow">Repetition penalty</span>
                   <span class="text-zinc-500" v-if="repetitionPenaltyLastN[0] !== 0">{{
                     repetitionPenalty[0].toFixed(2)
@@ -235,14 +232,12 @@ watchEffect(() => {
                   v-model="repetitionPenalty"
                   :min="0.01"
                   :max="4.0"
-                  :step="0.01"
-                />
+                  :step="0.01" />
               </div>
               <div v-if="repetitionPenaltyLastN[0] !== 0" class="col-span-full flex flex-col gap-2">
                 <RadioGroup
                   @update:modelValue="(e) => (repetitionPenaltyLastN = [e === 'last-n' ? 64 : -1])"
-                  :model-value="repetitionPenaltyLastN[0] === -1 ? 'whole-context' : 'last-n'"
-                >
+                  :model-value="repetitionPenaltyLastN[0] === -1 ? 'whole-context' : 'last-n'">
                   <Label class="flex items-start gap-2">
                     <RadioGroupItem id="option-one" value="whole-context" />
                     <span class="grow">... considering the whole context</span>
@@ -260,16 +255,14 @@ watchEffect(() => {
                   v-model="repetitionPenaltyLastN"
                   :min="1"
                   :max="512"
-                  :step="8"
-                />
+                  :step="8" />
               </div>
               <div v-if="repetitionPenaltyLastN[0] !== 0" class="col-span-full flex flex-col gap-2">
                 <Label class="flex items-start gap-2">
                   <!-- v-model doesn't work for this, for some reason -->
                   <Checkbox
                     :checked="repPenalizeNewline"
-                    @update:checked="(v) => (repPenalizeNewline = v)"
-                  />
+                    @update:checked="(v) => (repPenalizeNewline = v)" />
                   <span class="grow">Penalize newlines</span>
                 </Label>
               </div>

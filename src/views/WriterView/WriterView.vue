@@ -38,8 +38,7 @@ async function saveFile() {
     <nav class="fixed left-4 top-4 inline-flex flex-col gap-4">
       <button
         @click="isSettingsVisible = !isSettingsVisible"
-        class="opacity-30 grayscale hover:opacity-100 hover:grayscale-0"
-      >
+        class="opacity-30 grayscale hover:opacity-100 hover:grayscale-0">
         <IconElement icon="settings" :size="32" />
       </button>
       <button @click="loadFile()" class="opacity-30 grayscale hover:opacity-100 hover:grayscale-0">
@@ -50,6 +49,6 @@ async function saveFile() {
       </button>
     </nav>
     <TextPad ref="editor" />
-    <GenerationParametersWindow v-if="isSettingsVisible" @close="isSettingsVisible = false" />
+    <GenerationParametersWindow :visible="isSettingsVisible" @close="isSettingsVisible = false" />
   </main>
 </template>

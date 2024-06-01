@@ -28,7 +28,6 @@ function onEditorInput(e: Event) {
   if (!$editor || e.target !== $editor) return;
 
   emit("input", getContent());
-  //$editor.parentElement!.scrollBy({ behavior: "smooth", top: 99999 });
 }
 
 function onEditorKeyDown(e: KeyboardEvent) {
@@ -37,11 +36,9 @@ function onEditorKeyDown(e: KeyboardEvent) {
 }
 
 function onEditorKeyUp(e: KeyboardEvent) {
-  if (suggBox.value?.isShown) suggBox.value?.updateWindowPosition();
-
   if (e.ctrlKey && e.code === "Space") {
     e.preventDefault();
-    suggBox.value?.refreshSuggestions(getContent());
+    suggBox.value?.refreshSuggestions();
     suggBox.value?.show();
   } else if (e.ctrlKey && e.code === "ArrowUp") {
     e.preventDefault();
@@ -51,32 +48,30 @@ function onEditorKeyUp(e: KeyboardEvent) {
     suggBox.value?.scrollSelection(1);
   } else if (e.ctrlKey && e.code === "Enter") {
     e.preventDefault();
-
-    const suggestion = suggBox.value?.applySelectedSuggestion() ?? null;
-    suggBox.value?.hide();
-
-    if (suggestion) {
-      setContent(getContent() + suggestion);
-      suggBox.value?.refreshSuggestions(getContent());
-
-      nextTick(() => {
-        var range = document.createRange();
-        range.selectNodeContents(editor.value!);
-        range.collapse(false);
-        var sel = window.getSelection()!;
-        sel.removeAllRanges();
-        sel.addRange(range);
-        suggBox.value?.show();
-      });
-    }
+    suggBox.value?.selectSuggestion();
   } else if (e.code === "Escape") {
     e.preventDefault();
     suggBox.value?.hide();
   }
 }
 
-function onEditorBlur() {
-  suggBox.value?.hide();
+function onSuggestionSelected(suggestion: string | null) {
+  if (suggestion === null) return;
+
+  setContent(getContent() + suggestion);
+  suggBox.value?.refreshSuggestions();
+
+  nextTick(() => {
+    var range = document.createRange();
+    range.selectNodeContents(editor.value!);
+    range.collapse(false);
+    var sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    suggBox.value?.show();
+
+    editor.value?.parentElement?.scrollBy({ behavior: "smooth", top: 99999 });
+  });
 }
 
 defineExpose({
@@ -92,10 +87,11 @@ defineExpose({
     v-on:input="onEditorInput"
     @keyup="onEditorKeyUp"
     @keydown="onEditorKeyDown"
-    @blur="onEditorBlur"
-    contenteditable
-  ></main>
-  <SuggestionBox ref="suggBox" />
+    contenteditable></main>
+  <SuggestionBox
+    ref="suggBox"
+    @suggestion-selected="onSuggestionSelected"
+    :get-content="getContent" />
 </template>
 
 <style scoped>
