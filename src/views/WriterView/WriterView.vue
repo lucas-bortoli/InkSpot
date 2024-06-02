@@ -6,6 +6,7 @@ import TextPad from "./components/TextPad.vue";
 import * as FileIO from "@/lib/file_io";
 import { debounceWatch } from "@/lib/utils";
 import * as llm from "@/lib/llm";
+import LogoImage from "./components/LogoImage.vue";
 
 const isSettingsVisible = ref(false);
 
@@ -60,8 +61,11 @@ debounceWatch(
         Save file
       </button>
     </nav>
+    <div class="p-32">
+      <LogoImage :visible="editorContents.length < 8" />
+      <TextPad v-model="editorContents" @keybind-save="saveFile" @keybind-open="loadFile" />
+    </div>
     <GenerationParametersWindow :visible="isSettingsVisible" @close="isSettingsVisible = false" />
-    <TextPad v-model="editorContents" @keybind-save="saveFile" @keybind-open="loadFile" />
     <span class="fixed bottom-4 right-4 select-none text-sm text-zinc-700"
       >{{ tokenUsage }} tokens</span
     >
