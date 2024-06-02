@@ -36,7 +36,7 @@ function handleCloseButton() {
       <div
         ref="$window"
         v-if="visible"
-        class="fixed left-4 top-4 h-0 min-h-48 w-0 min-w-48"
+        class="fixed left-96 top-96 h-0 min-h-48 w-0 min-w-48"
         :style="{
           'min-width': `${minWidth}px`,
           'min-height': `${minHeight}px`,
