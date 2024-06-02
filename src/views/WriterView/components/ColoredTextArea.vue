@@ -19,6 +19,7 @@ const model = defineModel<string>({
 });
 
 const props = defineProps<{
+  placeholder?: string;
   syntaxHighlightRules?: SyntaxHighlightRule[];
 }>();
 
@@ -74,6 +75,7 @@ const innerHtml = computed(() => {
       @input="(e) => $emit('input', e)">
     </textarea>
     <div class="presentation-layer" v-html="innerHtml"></div>
+    <div class="placeholder-layer" v-if="model.length === 0">{{ placeholder }}</div>
   </div>
 </template>
 
@@ -88,15 +90,19 @@ const innerHtml = computed(() => {
 }
 
 .control-layer,
-.presentation-layer {
+.presentation-layer,
+.placeholder-layer {
   width: 100%;
   height: 100%;
+  /* Fixes some weird bug on firefox where if the value ends with \n the caret is in the wrong row */
+  padding-bottom: 1lh;
   grid-row: 1;
   grid-column: 1;
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
   white-space-collapse: preserve;
+  overflow: hidden;
 }
 
 .control-layer {
@@ -115,5 +121,13 @@ const innerHtml = computed(() => {
   color: inherit;
   pointer-events: none;
   user-select: none;
+}
+
+.placeholder-layer {
+  font-style: italic;
+  color: inherit;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.5;
 }
 </style>

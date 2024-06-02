@@ -4,51 +4,66 @@ import { ref } from "vue";
 import GenerationParametersWindow from "./components/GenerationParametersWindow.vue";
 import TextPad from "./components/TextPad.vue";
 import * as FileIO from "@/lib/file_io";
+import { debounceWatch } from "@/lib/utils";
+import * as llm from "@/lib/llm";
 
 const isSettingsVisible = ref(false);
 
-const editor = ref<InstanceType<typeof TextPad>>();
+const editorContents = ref("");
 
 async function loadFile() {
-  const $editor = editor.value;
-  if (!$editor) return;
-
   const contents = await FileIO.openFile("current", {
     extension: ".txt",
     friendlyName: "Text files",
     mimeType: "text/plain",
   });
 
-  $editor.setContent(contents);
+  editorContents.value = contents;
 }
 async function saveFile() {
-  const $editor = editor.value;
-  if (!$editor) return;
-
-  await FileIO.saveFile("current", $editor.getContent(), "story.txt", {
+  await FileIO.saveFile("current", editorContents.value, "file.txt", {
     extension: ".txt",
     friendlyName: "Text files",
     mimeType: "text/plain",
   });
 }
+
+const tokenUsage = ref(0);
+debounceWatch(
+  editorContents,
+  async () => {
+    tokenUsage.value = await llm.countTokens(editorContents.value, { considerEosToken: false });
+  },
+  500
+);
 </script>
 
 <template>
   <main class="h-screen w-screen overflow-y-auto">
-    <nav class="fixed left-4 top-4 inline-flex flex-col gap-4">
+    <nav class="fixed bottom-4 left-4 z-10 inline-flex flex-col items-start gap-4">
       <button
         @click="isSettingsVisible = !isSettingsVisible"
-        class="opacity-30 grayscale hover:opacity-100 hover:grayscale-0">
+        class="flex items-center gap-2 text-transparent opacity-20 grayscale transition-all hover:text-black hover:opacity-100 hover:grayscale-0">
         <IconElement icon="settings" :size="32" />
+        Generation settings
       </button>
-      <button @click="loadFile()" class="opacity-30 grayscale hover:opacity-100 hover:grayscale-0">
+      <button
+        @click="loadFile()"
+        class="flex items-center gap-2 text-transparent opacity-20 grayscale transition-all hover:text-black hover:opacity-100 hover:grayscale-0">
         <IconElement icon="openFolder" :size="32" />
+        Open file
       </button>
-      <button @click="saveFile()" class="opacity-30 grayscale hover:opacity-100 hover:grayscale-0">
+      <button
+        @click="saveFile()"
+        class="flex items-center gap-2 text-transparent opacity-20 grayscale transition-all hover:text-black hover:opacity-100 hover:grayscale-0">
         <IconElement icon="save" :size="32" />
+        Save file
       </button>
     </nav>
-    <TextPad ref="editor" />
     <GenerationParametersWindow :visible="isSettingsVisible" @close="isSettingsVisible = false" />
+    <TextPad v-model="editorContents" @keybind-save="saveFile" @keybind-open="loadFile" />
+    <span class="fixed bottom-4 right-4 select-none text-sm text-zinc-700"
+      >{{ tokenUsage }} tokens</span
+    >
   </main>
 </template>

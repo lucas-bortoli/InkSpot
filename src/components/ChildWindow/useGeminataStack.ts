@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, type Ref } from "vue";
+import { watch, type Ref } from "vue";
 
 // Sei que devo usar a ContextApi para isso, mas por enquanto tá OK
 let zIndex = 200;
@@ -8,21 +8,13 @@ function increaseZ(el: HTMLElement) {
 }
 
 export function useGeminataStacking(wind: Ref<HTMLElement | null | undefined>) {
-  function handleMouseDown() {
+  function bringToTop() {
     wind.value && increaseZ(wind.value);
   }
 
-  onMounted(() => {
-    wind.value?.addEventListener("mousedown", handleMouseDown);
+  watch(wind, () => {
+    wind.value?.addEventListener("mousedown", bringToTop);
   });
-
-  onBeforeUnmount(() => {
-    wind.value?.removeEventListener("mousedown", handleMouseDown);
-  });
-
-  const bringToTop = () => {
-    wind.value && increaseZ(wind.value);
-  };
 
   return { bringToTop };
 }

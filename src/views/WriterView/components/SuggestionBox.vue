@@ -6,12 +6,12 @@ import ChildWindow from "@/components/ChildWindow/ChildWindow.vue";
 import IconElement from "@/components/IconElement.vue";
 
 const props = defineProps<{
-  getContent: () => string;
+  textValue: string;
 }>();
 
 const generationParametersStore = useGenerationParametersStore();
-const isShown = ref(true);
-const suggestions = ref<string[]>(["Flash", "Bang", "Alakazam"]);
+const isShown = ref(false);
+const suggestions = ref<string[]>([]);
 const selectionIndex = ref(0);
 
 const currentSelection = computed<string | null>(
@@ -42,7 +42,7 @@ async function refreshSuggestions() {
       const suggestion = await llm.requestCompletion(
         {
           ...params,
-          prompt: props.getContent(),
+          prompt: props.textValue,
           n_predict: 8,
         },
         abortController.signal
@@ -115,16 +115,19 @@ defineExpose({
       </button>
     </template>
     <template #default>
-      <ol>
+      <ol class="h-[calc(100%-theme(spacing.6))] overflow-y-auto">
         <li
           v-for="(sug, index) in suggestions"
           :key="sug"
           @click="selectSuggestion(sug)"
           :class="{ 'bg-zinc-100 font-bold': selectionIndex === index }"
-          class="cursor-pointer select-none whitespace-pre-wrap px-2 py-2 font-mono text-sm hover:bg-zinc-100">
+          class="cursor-pointer select-none whitespace-pre-wrap px-2 font-mono text-sm hover:bg-zinc-100">
           {{ sug }}
         </li>
       </ol>
+      <footer class="flex h-6 select-none items-center gap-2 px-2 text-xs">
+        <span>Ctrl+Up/Down to select, Ctrl+Enter to apply</span>
+      </footer>
     </template>
   </ChildWindow>
 </template>
