@@ -62,7 +62,7 @@ debounceWatch(
       </button>
     </nav>
     <div class="p-32">
-      <LogoImage :visible="editorContents.length < 8" />
+      <LogoImage :visible="editorContents.length < 1" />
       <TextPad v-model="editorContents" @keybind-save="saveFile" @keybind-open="loadFile" />
     </div>
     <GenerationParametersWindow :visible="isSettingsVisible" @close="isSettingsVisible = false" />
