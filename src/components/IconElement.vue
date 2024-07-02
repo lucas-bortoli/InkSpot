@@ -6,6 +6,9 @@ import ReloadXMLIcon from "@/assets/icons/ReloadXML.svg";
 import OpenFolderIcon from "@/assets/icons/OpenFolder.svg";
 import SaveIcon from "@/assets/icons/Save.svg";
 import RefreshIcon from "@/assets/icons/Refresh.svg";
+import NewWindowIcon from "@/assets/icons/NewWindow.svg";
+import CancelIcon from "@/assets/icons/Cancel.svg";
+import ExportIcon from "@/assets/icons/Export.svg";
 
 const ICONS = {
   close: CloseIcon,
@@ -14,6 +17,9 @@ const ICONS = {
   openFolder: OpenFolderIcon,
   save: SaveIcon,
   refresh: RefreshIcon,
+  newWindow: NewWindowIcon,
+  cancel: CancelIcon,
+  export: ExportIcon,
 };
 
 const SIZES = [16, 24, 32, 48] as const;

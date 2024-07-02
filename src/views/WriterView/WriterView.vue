@@ -7,10 +7,11 @@ import * as FileIO from "@/lib/file_io";
 import { debounceWatch } from "@/lib/utils";
 import * as llm from "@/lib/llm";
 import LogoImage from "./components/LogoImage.vue";
+import MenuBar from "./components/MenuBar.vue";
 
 const isSettingsVisible = ref(false);
 
-const editorContents = ref("");
+const editorContents = ref("a\n".repeat(999));
 
 async function loadFile() {
   const contents = await FileIO.openFile("current", {
@@ -21,6 +22,7 @@ async function loadFile() {
 
   editorContents.value = contents;
 }
+
 async function saveFile() {
   await FileIO.saveFile("current", editorContents.value, "file.txt", {
     extension: ".txt",
@@ -29,41 +31,33 @@ async function saveFile() {
   });
 }
 
+function openNewWindow() {
+  window.open(location.pathname, "_blank", "width=720,height=480");
+}
+
 const tokenUsage = ref(0);
 debounceWatch(
   editorContents,
   async () => {
-    tokenUsage.value = await llm.countTokens(editorContents.value, { considerEosToken: false });
+    // tokenUsage.value = await llm.countTokens(editorContents.value, { considerEosToken: false });
   },
   500
 );
 </script>
 
 <template>
-  <main class="h-screen w-screen overflow-y-auto">
-    <nav class="fixed bottom-4 left-4 z-10 inline-flex flex-col items-start gap-4">
-      <button
-        @click="isSettingsVisible = !isSettingsVisible"
-        class="flex items-center gap-2 text-transparent opacity-20 grayscale transition-all hover:text-black hover:opacity-100 hover:grayscale-0">
-        <IconElement icon="settings" :size="32" />
-        Generation settings
-      </button>
-      <button
-        @click="loadFile()"
-        class="flex items-center gap-2 text-transparent opacity-20 grayscale transition-all hover:text-black hover:opacity-100 hover:grayscale-0">
-        <IconElement icon="openFolder" :size="32" />
-        Open file
-      </button>
-      <button
-        @click="saveFile()"
-        class="flex items-center gap-2 text-transparent opacity-20 grayscale transition-all hover:text-black hover:opacity-100 hover:grayscale-0">
-        <IconElement icon="save" :size="32" />
-        Save file
-      </button>
-    </nav>
-    <div class="p-32">
-      <LogoImage :visible="editorContents.length < 1" />
-      <TextPad v-model="editorContents" @keybind-save="saveFile" @keybind-open="loadFile" />
+  <main class="h-screen w-screen overflow-y-hidden">
+    <MenuBar
+      @project-open="loadFile"
+      @project-save="saveFile"
+      @gensettings-toggle-window="isSettingsVisible = !isSettingsVisible"
+      @window-new="openNewWindow" />
+    <div class="h-[calc(100%-2.5em)] overflow-y-auto p-32">
+      <!-- Unbounded height, allowing infinite scroll in the parent container -->
+      <div>
+        <LogoImage :visible="editorContents.length < 1" />
+        <TextPad v-model="editorContents" @keybind-save="saveFile" @keybind-open="loadFile" />
+      </div>
     </div>
     <GenerationParametersWindow :visible="isSettingsVisible" @close="isSettingsVisible = false" />
     <span class="fixed bottom-4 right-4 select-none text-sm text-zinc-700"
