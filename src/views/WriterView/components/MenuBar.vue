@@ -11,13 +11,15 @@ import MenubarSubTrigger from "@/components/ui/menubar/MenubarSubTrigger.vue";
 import MenubarSubContent from "@/components/ui/menubar/MenubarSubContent.vue";
 import IconElement from "@/components/IconElement.vue";
 
+import type { GenerationPreset } from "@/stores/generationParameters";
+
 defineEmits<{
   (e: "project-open"): void;
   (e: "project-save"): void;
   (e: "project-export", type: "plain" | "pdf"): void;
   (e: "window-new"): void;
   (e: "editor-padding", padding: "compact" | "comfortable" | "comfortable-2x"): void;
-  (e: "gensettings-load-preset", padding: "technical" | "creative"): void;
+  (e: "gensettings-load-preset", padding: GenerationPreset): void;
   (e: "gensettings-toggle-window"): void;
 }>();
 </script>

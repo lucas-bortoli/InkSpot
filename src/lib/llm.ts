@@ -46,6 +46,7 @@ class RequestQueue {
   private isProcessing: boolean = false;
 
   add(task: () => Promise<void>) {
+    this.queue.push(() => new Promise((r) => setTimeout(r, 50)));
     this.queue.push(task);
     this.processQueue();
   }
@@ -73,6 +74,7 @@ export async function requestCompletion(
   options: CompletionOptions,
   signal?: AbortSignal
 ): Promise<string> {
+  console.log(options);
   return new Promise((resolve, reject) => {
     queue.add(async () => {
       try {

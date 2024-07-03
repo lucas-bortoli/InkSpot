@@ -1,17 +1,23 @@
 <script setup lang="ts">
-import IconElement from "@/components/IconElement.vue";
 import { ref } from "vue";
 import GenerationParametersWindow from "./components/GenerationParametersWindow.vue";
 import TextPad from "./components/TextPad.vue";
 import * as FileIO from "@/lib/file_io";
-import { debounceWatch } from "@/lib/utils";
 import * as llm from "@/lib/llm";
+import { debounceWatch } from "@/lib/utils";
 import LogoImage from "./components/LogoImage.vue";
 import MenuBar from "./components/MenuBar.vue";
+import {
+  GENERATION_PRESETS,
+  useGenerationParametersStore,
+  type GenerationPreset,
+} from "@/stores/generationParameters";
 
 const isSettingsVisible = ref(false);
 
-const editorContents = ref("a\n".repeat(999));
+const editorContents = ref("");
+
+const generationParametersStore = useGenerationParametersStore();
 
 async function loadFile() {
   const contents = await FileIO.openFile("current", {
@@ -35,11 +41,17 @@ function openNewWindow() {
   window.open(location.pathname, "_blank", "width=720,height=480");
 }
 
+function loadGenSettingsPreset(preset: GenerationPreset) {
+  generationParametersStore.parameters = Object.assign({}, GENERATION_PRESETS[preset]);
+  generationParametersStore.paramsKey.push(Date.now());
+  generationParametersStore.paramsKey.shift();
+}
+
 const tokenUsage = ref(0);
 debounceWatch(
   editorContents,
   async () => {
-    // tokenUsage.value = await llm.countTokens(editorContents.value, { considerEosToken: false });
+    tokenUsage.value = await llm.countTokens(editorContents.value, { considerEosToken: false });
   },
   500
 );
@@ -51,6 +63,7 @@ debounceWatch(
       @project-open="loadFile"
       @project-save="saveFile"
       @gensettings-toggle-window="isSettingsVisible = !isSettingsVisible"
+      @gensettings-load-preset="loadGenSettingsPreset"
       @window-new="openNewWindow" />
     <div class="h-[calc(100%-2.5em)] overflow-y-auto p-32">
       <!-- Unbounded height, allowing infinite scroll in the parent container -->
