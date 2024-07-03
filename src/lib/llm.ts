@@ -46,7 +46,6 @@ class RequestQueue {
   private isProcessing: boolean = false;
 
   add(task: () => Promise<void>) {
-    this.queue.push(() => new Promise((r) => setTimeout(r, 50)));
     this.queue.push(task);
     this.processQueue();
   }

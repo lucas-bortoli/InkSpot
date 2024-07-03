@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import GenerationParametersWindow from "./components/GenerationParametersWindow.vue";
 import TextPad from "./components/TextPad.vue";
 import * as FileIO from "@/lib/file_io";
@@ -16,6 +16,7 @@ import {
 const isSettingsVisible = ref(false);
 
 const editorContents = ref("");
+const editorPadding = ref<"compact" | "comfortable" | "comfortable-2x">("comfortable");
 
 const generationParametersStore = useGenerationParametersStore();
 
@@ -47,6 +48,10 @@ function loadGenSettingsPreset(preset: GenerationPreset) {
   generationParametersStore.paramsKey.shift();
 }
 
+function setPadding(padding: (typeof editorPadding)["value"]) {
+  editorPadding.value = padding;
+}
+
 const tokenUsage = ref(0);
 debounceWatch(
   editorContents,
@@ -55,6 +60,18 @@ debounceWatch(
   },
   500
 );
+
+const editorStyle = computed(() => {
+  switch (editorPadding.value) {
+    case "comfortable-2x":
+      return "p-64 max-w-screen-xl";
+    case "comfortable":
+      return "p-32 max-w-screen-2xl";
+    case "compact":
+    default:
+      return "p-8";
+  }
+});
 </script>
 
 <template>
@@ -64,8 +81,9 @@ debounceWatch(
       @project-save="saveFile"
       @gensettings-toggle-window="isSettingsVisible = !isSettingsVisible"
       @gensettings-load-preset="loadGenSettingsPreset"
-      @window-new="openNewWindow" />
-    <div class="h-[calc(100%-2.5em)] overflow-y-auto p-32">
+      @window-new="openNewWindow"
+      @editor-padding="setPadding" />
+    <div class="mx-auto h-[calc(100%-2.5em)] overflow-y-auto" :class="editorStyle">
       <!-- Unbounded height, allowing infinite scroll in the parent container -->
       <div>
         <LogoImage :visible="editorContents.length < 1" />
