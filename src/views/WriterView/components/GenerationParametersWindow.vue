@@ -2,7 +2,7 @@
 import ChildWindow from "@/components/ChildWindow/ChildWindow.vue";
 import Slider from "@/components/ui/slider/Slider.vue";
 import Checkbox from "@/components/ui/checkbox/Checkbox.vue";
-import { ref, watchEffect } from "vue";
+import { ref, watch, watchEffect } from "vue";
 import Label from "@/components/ui/label/Label.vue";
 import Input from "@/components/ui/input/Input.vue";
 import RadioGroup from "@/components/ui/radio-group/RadioGroup.vue";
@@ -45,7 +45,7 @@ const repPenalizeNewline = ref(true);
 setValues(paramsStore.parameters);
 
 function setValues(vals: GenerationParameters) {
-  paramsStore.parameters = vals;
+  // paramsStore.parameters = vals;
   temperature.value = [vals.temperature];
   topK.value = [vals.topK ?? 0];
   minP.value = [vals.minP ?? 0];
@@ -106,6 +106,15 @@ watchEffect(() => {
 
   paramsStore.parameters = newParams;
 });
+
+watch(
+  paramsStore.paramsKey,
+  () => {
+    console.log("key change");
+    setValues(paramsStore.parameters);
+  },
+  { immediate: true }
+);
 </script>
 
 <template>

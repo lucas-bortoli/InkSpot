@@ -74,7 +74,7 @@ const rules: SyntaxHighlightRule[] = [
 
 <template>
   <ColoredTextArea
-    class="editor block min-h-screen w-full"
+    class="editor block h-full w-full"
     :placeholder="'Start writing...\n(ctrl+Space to open autocomplete window/refresh suggestions)'"
     :syntax-highlight-rules="rules"
     v-model="textValue"
@@ -88,7 +88,6 @@ const rules: SyntaxHighlightRule[] = [
 
 <style scoped>
 .editor {
-  padding-bottom: 90lvh;
 }
 
 .generated-text {

@@ -13,6 +13,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@microsoft/fetch-event-source": "^2.0.1",
     "@vee-validate/zod": "^4.12.8",
     "@vueuse/core": "^10.10.0",
     "class-variance-authority": "^0.7.0",

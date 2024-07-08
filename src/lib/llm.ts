@@ -1,5 +1,6 @@
 import { Logger } from "./logger";
 import type z from "zod";
+import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 const LLAMAFILE_SERVER = "http://pathfinder:5003";
 const logger = new Logger("llm");
@@ -50,7 +51,7 @@ class RequestQueue {
   }
 
   private async processQueue() {
-    //if (this.isProcessing) return;
+    if (this.isProcessing) return;
     this.isProcessing = true;
 
     while (this.queue.length > 0) {
@@ -72,12 +73,15 @@ export async function requestCompletion(
   options: CompletionOptions,
   signal?: AbortSignal
 ): Promise<string> {
+  console.log(options);
   return new Promise((resolve, reject) => {
     queue.add(async () => {
       try {
         logger.debug("Requesting completion", options);
 
-        const response = await fetch(`${LLAMAFILE_SERVER}/completion`, {
+        const tokens: string[] = [];
+
+        await fetchEventSource(`${LLAMAFILE_SERVER}/completion`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -88,22 +92,8 @@ export async function requestCompletion(
             ...options,
           }),
           signal,
-        });
-
-        const stream = response.body!;
-        const reader = stream.getReader();
-        const decoder = new TextDecoder();
-
-        const tokens: string[] = [];
-
-        let rawChunk: ReadableStreamReadResult<Uint8Array>;
-        while (!(rawChunk = await reader.read()).done) {
-          const lines = decoder.decode(rawChunk.value).split("\n");
-          for (let line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            line = line.replace(/^data: /, "");
-
-            const { content } = JSON.parse(line) as { content: string };
+          onmessage({ data }) {
+            const { content } = JSON.parse(data) as { content: string };
 
             if (content) {
               tokens.push(content);
@@ -112,8 +102,8 @@ export async function requestCompletion(
                 options.onToken(content);
               }
             }
-          }
-        }
+          },
+        });
 
         logger.info("Response:", tokens.join(""));
 

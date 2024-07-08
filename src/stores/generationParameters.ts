@@ -18,6 +18,26 @@ export interface GenerationParameters {
     | null;
 }
 
+export type GenerationPreset = "technical" | "creative";
+export const GENERATION_PRESETS: { [key in GenerationPreset]: GenerationParameters } = {
+  technical: {
+    temperature: 0.7,
+    minP: 0.05,
+    mirostat: null,
+    repetitionPenalty: null,
+    seed: null,
+    topK: 30,
+  },
+  creative: {
+    temperature: 1.15,
+    minP: 0.1,
+    mirostat: null,
+    seed: null,
+    repetitionPenalty: null,
+    topK: 60,
+  },
+};
+
 export const useGenerationParametersStore = defineStore("generation_parameters", () => {
   const defaultParameters: GenerationParameters = {
     temperature: 0.6,
@@ -34,6 +54,7 @@ export const useGenerationParametersStore = defineStore("generation_parameters",
   };
 
   const parameters = ref<GenerationParameters>(defaultParameters);
+  const paramsKey = ref([Date.now()]);
 
   function formatToApi(params: GenerationParameters): Omit<LlamaCppCompletionOptions, "prompt"> {
     return {
@@ -60,5 +81,5 @@ export const useGenerationParametersStore = defineStore("generation_parameters",
     };
   }
 
-  return { defaultParameters, parameters, formatToApi };
+  return { defaultParameters, parameters, paramsKey, formatToApi };
 });

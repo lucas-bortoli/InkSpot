@@ -103,6 +103,7 @@ const innerHtml = computed(() => {
   line-height: inherit;
   white-space-collapse: preserve;
   overflow: hidden;
+  word-wrap: break-word;
 }
 
 .control-layer {

@@ -36,7 +36,7 @@ function handleCloseButton() {
       <div
         ref="$window"
         v-if="visible"
-        class="fixed left-96 top-96 h-0 min-h-48 w-0 min-w-48"
+        class="fixed left-8 top-8 h-0 min-h-48 w-0 min-w-48"
         :style="{
           'min-width': `${minWidth}px`,
           'min-height': `${minHeight}px`,
@@ -44,7 +44,7 @@ function handleCloseButton() {
           'max-height': `${maxHeight}px`,
         }">
         <div
-          class="flex select-none items-center rounded-t-xl bg-zinc-100 p-1 pl-4"
+          class="titlebar flex select-none items-center rounded-t-lg bg-zinc-100 p-1 pl-4"
           ref="$titleBar">
           <slot name="icon"></slot>
           <div class="pointer-events-none ml-2 grow text-sm text-zinc-700 first:ml-0">
@@ -61,13 +61,13 @@ function handleCloseButton() {
           </div>
         </div>
         <div
-          class="inline-block h-[calc(100%-theme(spacing.8))] w-full overflow-hidden rounded-b-xl bg-white shadow-2xl">
+          class="content-area-wrapper inline-block h-[calc(100%-theme(spacing.8))] w-full overflow-hidden rounded-b-lg bg-white shadow-2xl">
           <main class="h-full w-full overflow-y-auto">
             <slot></slot>
           </main>
         </div>
         <div
-          class="resizeArea absolute left-3 top-3 -z-10 h-full w-full select-none rounded-2xl bg-black opacity-0 hover:opacity-40"
+          class="resizeArea absolute left-3 top-3 -z-10 h-full w-full select-none rounded-xl bg-black opacity-0 hover:opacity-40"
           ref="$resizeArea"></div>
       </div>
     </Transition>
@@ -75,6 +75,16 @@ function handleCloseButton() {
 </template>
 
 <style scoped>
+.titlebar {
+  border: 1px solid #b7b7b7;
+  border-width: 1px 1px 0 1px;
+}
+
+.content-area-wrapper {
+  border: 1px solid #b7b7b7;
+  border-width: 0 1px 1px 1px;
+}
+
 .resizeArea {
   transition: opacity ease-in-out 200ms;
   transition-delay: 150ms;
