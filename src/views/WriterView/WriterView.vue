@@ -12,6 +12,13 @@ import {
   useGenerationParametersStore,
   type GenerationPreset,
 } from "@/stores/generationParameters";
+import {
+  PROJECT_EXTENSION,
+  PROJECT_MIME,
+  PROJECT_TYPE_FRIENDLY,
+  exportProject,
+  loadProject,
+} from "@/lib/project_manager";
 
 const isSettingsVisible = ref(false);
 
@@ -21,20 +28,30 @@ const editorPadding = ref<"compact" | "comfortable" | "comfortable-2x">("comfort
 const generationParametersStore = useGenerationParametersStore();
 
 async function loadFile() {
-  const contents = await FileIO.openFile("current", {
-    extension: ".txt",
-    friendlyName: "Text files",
-    mimeType: "text/plain",
+  const projectData = await FileIO.openFile("current", {
+    extension: PROJECT_EXTENSION,
+    friendlyName: PROJECT_TYPE_FRIENDLY,
+    mimeType: PROJECT_MIME,
   });
 
-  editorContents.value = contents;
+  const project = loadProject(projectData);
+
+  generationParametersStore.parameters = project.generationParameters;
+  generationParametersStore.paramsKey.push(Date.now());
+  generationParametersStore.paramsKey.shift();
+  editorContents.value = project.content;
 }
 
 async function saveFile() {
-  await FileIO.saveFile("current", editorContents.value, "file.txt", {
-    extension: ".txt",
-    friendlyName: "Text files",
-    mimeType: "text/plain",
+  const project = exportProject({
+    generationParameters: generationParametersStore.parameters,
+    content: editorContents.value,
+  });
+
+  await FileIO.saveFile("current", project, `New Document${PROJECT_EXTENSION}`, {
+    extension: PROJECT_EXTENSION,
+    friendlyName: PROJECT_TYPE_FRIENDLY,
+    mimeType: PROJECT_MIME,
   });
 }
 

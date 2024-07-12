@@ -1,22 +1,38 @@
 import { ref } from "vue";
 import { defineStore } from "pinia";
 import type { CompletionOptions as LlamaCppCompletionOptions } from "@/lib/llm";
+import { z } from "zod";
 
-export interface GenerationParameters {
-  temperature: number;
-  topK: number | null;
-  minP: number | null;
-  mirostat: {
-    version: 1 | 2;
-    learningRate: number;
-    targetEntropy: number;
-  } | null;
-  seed: number | null;
-  repetitionPenalty:
-    | { type: "whole_context"; penalty: number; penalizeNewlines: boolean }
-    | { type: "last_n_tokens"; lastNTokens: number; penalty: number; penalizeNewlines: boolean }
-    | null;
-}
+export const GenerationParametersSchema = z.object({
+  temperature: z.number().min(0.0),
+  topK: z.nullable(z.number().min(0.0)),
+  minP: z.nullable(z.number().min(0.0).max(1.0), z.null()),
+  mirostat: z.nullable(
+    z.object({
+      version: z.union([z.literal(1), z.literal(2)]),
+      learningRate: z.number().min(0.0),
+      targetEntropy: z.number().min(0.0),
+    })
+  ),
+  seed: z.nullable(z.number().int()),
+  repetitionPenalty: z.nullable(
+    z.discriminatedUnion("type", [
+      z.object({
+        type: z.literal("whole_context"),
+        penalty: z.number(),
+        penalizeNewlines: z.boolean(),
+      }),
+      z.object({
+        type: z.literal("last_n_tokens"),
+        lastNTokens: z.number(),
+        penalty: z.number(),
+        penalizeNewlines: z.boolean(),
+      }),
+    ])
+  ),
+});
+
+export type GenerationParameters = z.infer<typeof GenerationParametersSchema>;
 
 export type GenerationPreset = "technical" | "creative";
 export const GENERATION_PRESETS: { [key in GenerationPreset]: GenerationParameters } = {
