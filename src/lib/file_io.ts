@@ -4,6 +4,10 @@ interface FileHandleMap {
 
 const fileHandles: FileHandleMap = {};
 
+export function clearFileKey(key: string) {
+  delete fileHandles[key];
+}
+
 export async function openFile(
   key: string,
   type: { friendlyName: string; mimeType: string; extension: string }

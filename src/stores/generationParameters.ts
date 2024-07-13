@@ -55,19 +55,7 @@ export const GENERATION_PRESETS: { [key in GenerationPreset]: GenerationParamete
 };
 
 export const useGenerationParametersStore = defineStore("generation_parameters", () => {
-  const defaultParameters: GenerationParameters = {
-    temperature: 0.6,
-    topK: 40,
-    minP: null,
-    repetitionPenalty: {
-      type: "last_n_tokens",
-      lastNTokens: 64,
-      penalty: 1.1,
-      penalizeNewlines: true,
-    },
-    seed: null,
-    mirostat: null,
-  };
+  const defaultParameters = GENERATION_PRESETS["creative"];
 
   const parameters = ref<GenerationParameters>(defaultParameters);
   const paramsKey = ref([Date.now()]);
