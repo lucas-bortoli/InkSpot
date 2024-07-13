@@ -10,6 +10,7 @@ import NewWindowIcon from "@/assets/icons/NewWindow.svg";
 import CancelIcon from "@/assets/icons/Cancel.svg";
 import ExportIcon from "@/assets/icons/Export.svg";
 import NewIcon from "@/assets/icons/New.svg";
+import NextFrameIcon from "@/assets/icons/NextFrame.svg";
 
 const ICONS = {
   close: CloseIcon,
@@ -22,6 +23,7 @@ const ICONS = {
   cancel: CancelIcon,
   export: ExportIcon,
   new: NewIcon,
+  nextFrame: NextFrameIcon,
 };
 
 const SIZES = [16, 24, 32, 48] as const;
