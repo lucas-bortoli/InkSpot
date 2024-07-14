@@ -2,7 +2,7 @@ import { Logger } from "./logger";
 import type z from "zod";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
-const LLAMAFILE_SERVER = "http://pathfinder:5003";
+const LLAMAFILE_SERVER = "https://pathfinder.tail6959.ts.net:5002";
 const logger = new Logger("llm");
 
 export interface CompletionOptions {
