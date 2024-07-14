@@ -12,6 +12,14 @@ import {
   useGenerationParametersStore,
   type GenerationPreset,
 } from "@/stores/generationParameters";
+import {
+  PROJECT_EXTENSION,
+  PROJECT_MIME,
+  PROJECT_TYPE_FRIENDLY,
+  saveProject,
+  loadProject,
+  exportProjectHtml,
+} from "@/lib/project_manager";
 
 const isSettingsVisible = ref(false);
 
@@ -20,21 +28,36 @@ const editorPadding = ref<"compact" | "comfortable" | "comfortable-2x">("comfort
 
 const generationParametersStore = useGenerationParametersStore();
 
+async function newFile() {
+  FileIO.clearFileKey("current");
+  editorContents.value = "";
+}
+
 async function loadFile() {
-  const contents = await FileIO.openFile("current", {
-    extension: ".txt",
-    friendlyName: "Text files",
-    mimeType: "text/plain",
+  const projectData = await FileIO.openFile("current", {
+    extension: PROJECT_EXTENSION,
+    friendlyName: PROJECT_TYPE_FRIENDLY,
+    mimeType: PROJECT_MIME,
   });
 
-  editorContents.value = contents;
+  const project = loadProject(projectData);
+
+  generationParametersStore.parameters = project.generationParameters;
+  generationParametersStore.paramsKey.push(Date.now());
+  generationParametersStore.paramsKey.shift();
+  editorContents.value = project.content;
 }
 
 async function saveFile() {
-  await FileIO.saveFile("current", editorContents.value, "file.txt", {
-    extension: ".txt",
-    friendlyName: "Text files",
-    mimeType: "text/plain",
+  const project = saveProject({
+    generationParameters: generationParametersStore.parameters,
+    content: editorContents.value,
+  });
+
+  await FileIO.saveFile("current", project, `New Document${PROJECT_EXTENSION}`, {
+    extension: PROJECT_EXTENSION,
+    friendlyName: PROJECT_TYPE_FRIENDLY,
+    mimeType: PROJECT_MIME,
   });
 }
 
@@ -50,6 +73,10 @@ function loadGenSettingsPreset(preset: GenerationPreset) {
 
 function setPadding(padding: (typeof editorPadding)["value"]) {
   editorPadding.value = padding;
+}
+
+function exportProject(type: "html" | "pdf") {
+  if (type === "html") exportProjectHtml(editorContents.value);
 }
 
 const tokenUsage = ref(0);
@@ -77,12 +104,14 @@ const editorStyle = computed(() => {
 <template>
   <main class="h-screen w-screen overflow-y-hidden">
     <MenuBar
+      @project-new="newFile"
       @project-open="loadFile"
       @project-save="saveFile"
       @gensettings-toggle-window="isSettingsVisible = !isSettingsVisible"
       @gensettings-load-preset="loadGenSettingsPreset"
       @window-new="openNewWindow"
-      @editor-padding="setPadding" />
+      @editor-padding="setPadding"
+      @project-export="exportProject" />
     <div class="mx-auto h-[calc(100%-2.5em)] overflow-y-auto" :class="editorStyle">
       <!-- Unbounded height, allowing infinite scroll in the parent container -->
       <div>

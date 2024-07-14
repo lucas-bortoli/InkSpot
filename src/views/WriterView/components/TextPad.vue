@@ -58,6 +58,10 @@ function onSuggestionSelected(suggestion: string | null) {
   });
 }
 
+function onFastForwardToken(token: string) {
+  textValue.value = textValue.value + token;
+}
+
 const rules: SyntaxHighlightRule[] = [
   {
     keywords: [
@@ -83,6 +87,7 @@ const rules: SyntaxHighlightRule[] = [
   <SuggestionBox
     ref="suggBox"
     @suggestion-selected="onSuggestionSelected"
+    @fast-forward-token="onFastForwardToken"
     :text-value="textValue" />
 </template>
 

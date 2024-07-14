@@ -20,47 +20,71 @@ const currentSelection = computed<string | null>(
 
 const emit = defineEmits<{
   (e: "suggestionSelected", suggestion: string | null): void;
+  (e: "fastForwardToken", token: string): void;
 }>();
 
-let currentAbortController: AbortController | null = null;
+let currentGenerationAbortController: AbortController | null = null;
 
 async function refreshSuggestions() {
-  if (currentAbortController) {
-    currentAbortController.abort();
+  if (currentGenerationAbortController) {
+    currentGenerationAbortController.abort();
   }
 
   const abortController = new AbortController();
-  currentAbortController = abortController;
+  currentGenerationAbortController = abortController;
 
   suggestions.value = [];
   selectionIndex.value = 0;
 
   for (let i = 0; i <= 2; i++) {
+    if (abortController.signal.aborted) break;
+
     const params = generationParametersStore.formatToApi(generationParametersStore.parameters);
+    const suggestion = await llm.requestCompletion(
+      {
+        ...params,
+        prompt: props.textValue,
+        n_predict: 8,
+      },
+      abortController.signal
+    );
 
-    try {
-      const suggestion = await llm.requestCompletion(
-        {
-          ...params,
-          prompt: props.textValue,
-          n_predict: 8,
-        },
-        abortController.signal
-      );
-
-      suggestions.value.push(suggestion);
-    } catch (error) {
-      if ((error as Error).name === "AbortError") {
-        console.log("Previous request aborted");
-      } else {
-        console.error("Error in requestCompletion:", error);
-      }
-      break; // Stop the loop if aborted
-    }
+    suggestions.value.push(suggestion);
   }
 
-  if (currentAbortController === abortController) {
-    currentAbortController = null;
+  if (currentGenerationAbortController === abortController) {
+    currentGenerationAbortController = null;
+  }
+}
+
+async function startFastForward() {
+  currentGenerationAbortController?.abort();
+
+  const abortController = new AbortController();
+  currentGenerationAbortController = abortController;
+
+  const params = generationParametersStore.formatToApi(generationParametersStore.parameters);
+
+  await llm.requestCompletion(
+    {
+      ...params,
+      prompt: props.textValue,
+      n_predict: 128,
+      onToken(token) {
+        if (abortController.signal.aborted) {
+          console.warn("LLM keeps returning token but generation was aborted", token);
+          return;
+        }
+
+        console.info("token:", token);
+        emit("fastForwardToken", token);
+      },
+    },
+    abortController.signal
+  );
+
+  if (currentGenerationAbortController === abortController) {
+    currentGenerationAbortController = null;
   }
 }
 
@@ -105,6 +129,14 @@ defineExpose({
   <ChildWindow :visible="isShown" @close="hide()" :min-width="360">
     <template #title>Suggestions</template>
     <template #extra-buttons>
+      <button
+        class="flex items-center justify-center gap-1 rounded-lg bg-zinc-200 p-1 capitalize"
+        style="font-size: 12px; line-height: 0"
+        @click="startFastForward()"
+        title="Keep generating">
+        <IconElement icon="nextFrame" />
+        Fast-forward (+128)
+      </button>
       <button
         class="flex items-center justify-center gap-1 rounded-lg bg-zinc-200 p-1 capitalize"
         style="font-size: 12px; line-height: 0"

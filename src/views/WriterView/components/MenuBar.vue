@@ -14,9 +14,10 @@ import IconElement from "@/components/IconElement.vue";
 import type { GenerationPreset } from "@/stores/generationParameters";
 
 defineEmits<{
+  (e: "project-new"): void;
   (e: "project-open"): void;
   (e: "project-save"): void;
-  (e: "project-export", type: "plain" | "pdf"): void;
+  (e: "project-export", type: "html" | "pdf"): void;
   (e: "window-new"): void;
   (e: "editor-padding", padding: "compact" | "comfortable" | "comfortable-2x"): void;
   (e: "gensettings-load-preset", padding: GenerationPreset): void;
@@ -29,6 +30,9 @@ defineEmits<{
     <MenubarMenu>
       <MenubarTrigger>File</MenubarTrigger>
       <MenubarContent>
+        <MenubarItem @click="$emit('project-new')">
+          <IconElement icon="new" class="menu-icon" /> New Project
+        </MenubarItem>
         <MenubarItem @click="$emit('project-open')">
           <IconElement icon="openFolder" class="menu-icon" /> Open Project...
         </MenubarItem>
@@ -42,8 +46,7 @@ defineEmits<{
             <IconElement icon="export" class="menu-icon" /> Export...
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenubarItem @click="$emit('project-export', 'pdf')">PDF (pretty)</MenubarItem>
-            <MenubarItem @click="$emit('project-export', 'plain')">Plain text</MenubarItem>
+            <MenubarItem @click="$emit('project-export', 'html')">HTML document</MenubarItem>
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSeparator />
