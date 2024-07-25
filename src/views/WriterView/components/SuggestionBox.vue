@@ -4,6 +4,7 @@ import * as llm from "@/lib/llm";
 import { useGenerationParametersStore } from "@/stores/generationParameters";
 import ChildWindow from "@/components/ChildWindow/ChildWindow.vue";
 import IconElement from "@/components/IconElement.vue";
+import { getSettings } from "@/lib/settings";
 
 const props = defineProps<{
   textValue: string;
@@ -46,6 +47,7 @@ async function refreshSuggestions() {
         prompt: props.textValue,
         n_predict: 8,
       },
+      getSettings().serverUrl,
       abortController.signal
     );
 
@@ -80,6 +82,7 @@ async function startFastForward() {
         emit("fastForwardToken", token);
       },
     },
+    getSettings().serverUrl,
     abortController.signal
   );
 

@@ -6,6 +6,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function isValidUrl(urlString: string) {
+  try {
+    new URL(urlString);
+
+    // Successful creation of URL object, URL is valid
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 export function debounceWatch<T>(
   source: WatchSource<T> | WatchSource<T>[],
   cb: WatchCallback<T>,

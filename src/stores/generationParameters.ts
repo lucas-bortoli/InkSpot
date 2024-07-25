@@ -33,8 +33,8 @@ export const GenerationParametersSchema = z.object({
 });
 
 export type GenerationParameters = z.infer<typeof GenerationParametersSchema>;
-
 export type GenerationPreset = "technical" | "creative";
+
 export const GENERATION_PRESETS: { [key in GenerationPreset]: GenerationParameters } = {
   technical: {
     temperature: 0.7,
@@ -60,7 +60,9 @@ export const useGenerationParametersStore = defineStore("generation_parameters",
   const parameters = ref<GenerationParameters>(defaultParameters);
   const paramsKey = ref([Date.now()]);
 
-  function formatToApi(params: GenerationParameters): Omit<LlamaCppCompletionOptions, "prompt"> {
+  function formatToApi(
+    params: GenerationParameters
+  ): Omit<LlamaCppCompletionOptions, "prompt" | "server_url"> {
     return {
       temperature: params.temperature,
       top_k: params.topK ?? 0,
