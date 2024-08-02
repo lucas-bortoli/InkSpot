@@ -40,34 +40,6 @@ export interface CompletionOptions {
   onToken?: (token: string) => void;
 }
 
-class RequestQueue {
-  private queue: (() => Promise<void>)[] = [];
-  private isProcessing: boolean = false;
-
-  add(task: () => Promise<void>) {
-    this.queue.push(task);
-    this.processQueue();
-  }
-
-  private async processQueue() {
-    if (this.isProcessing) return;
-    this.isProcessing = true;
-
-    while (this.queue.length > 0) {
-      const task = this.queue.shift()!;
-      try {
-        await task();
-      } catch (error) {
-        console.error("Error processing task:", error);
-      }
-    }
-
-    this.isProcessing = false;
-  }
-}
-
-const queue = new RequestQueue();
-
 /**
  * Requests a text completion from the language model server.
  * @param options Generation parameters options
@@ -80,50 +52,46 @@ export async function requestCompletion(
   serverUrl: string,
   signal?: AbortSignal
 ): Promise<string> {
-  console.log(options);
-  return new Promise((resolve, reject) => {
-    queue.add(async () => {
-      try {
-        logger.debug("Requesting completion", options);
+  try {
+    logger.debug("Requesting completion", options);
 
-        const tokens: string[] = [];
+    const tokens: string[] = [];
 
-        await fetchEventSource(`${serverUrl}/completion`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            stream: true,
-            cache_prompt: true,
-            ...options,
-          }),
-          signal,
-          onmessage({ data }) {
-            const { content } = JSON.parse(data) as { content: string };
+    await fetchEventSource(`${serverUrl}/completion`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        stream: true,
+        cache_prompt: true,
+        ...options,
+      }),
+      signal,
+      onmessage({ data }) {
+        const { content } = JSON.parse(data) as { content: string };
 
-            if (content) {
-              tokens.push(content);
+        if (content) {
+          tokens.push(content);
 
-              if (options.onToken) {
-                options.onToken(content);
-              }
-            }
-          },
-        });
-
-        logger.info("Response:", tokens.join(""));
-
-        resolve(tokens.join(""));
-      } catch (error) {
-        if ((error as Error).name === "AbortError") {
-          logger.info("Request aborted");
-        } else {
-          reject(error);
+          if (options.onToken) {
+            options.onToken(content);
+          }
         }
-      }
+      },
     });
-  });
+
+    logger.info("Response:", tokens.join(""));
+
+    return tokens.join("");
+  } catch (error) {
+    if ((error as Error).name === "AbortError") {
+      logger.info("Request aborted");
+      return "";
+    } else {
+      throw error;
+    }
+  }
 }
 
 /**
@@ -139,24 +107,16 @@ export async function countTokens(
     considerEosToken?: boolean;
   }
 ): Promise<number> {
-  return new Promise((resolve, reject) => {
-    queue.add(async () => {
-      try {
-        const response = await fetch(`${serverUrl}/tokenize`, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({ content: input, add_special: options?.considerEosToken ?? false }),
-          signal: options?.signal,
-        }).then((r) => r.json());
+  const response = await fetch(`${serverUrl}/tokenize`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ content: input, add_special: options?.considerEosToken ?? false }),
+    signal: options?.signal,
+  }).then((r) => r.json());
 
-        resolve(response.tokens.length);
-      } catch (error) {
-        reject(error);
-      }
-    });
-  });
+  return response.tokens.length;
 }
 
 /**
