@@ -33,8 +33,8 @@ export const GenerationParametersSchema = z.object({
 });
 
 export type GenerationParameters = z.infer<typeof GenerationParametersSchema>;
-
 export type GenerationPreset = "technical" | "creative";
+
 export const GENERATION_PRESETS: { [key in GenerationPreset]: GenerationParameters } = {
   technical: {
     temperature: 0.7,

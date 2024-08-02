@@ -22,6 +22,7 @@ defineEmits<{
   (e: "editor-padding", padding: "compact" | "comfortable" | "comfortable-2x"): void;
   (e: "gensettings-load-preset", padding: GenerationPreset): void;
   (e: "gensettings-toggle-window"): void;
+  (e: "app-settings-show"): void;
 }>();
 </script>
 
@@ -50,6 +51,10 @@ defineEmits<{
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSeparator />
+        <MenubarItem @click="$emit('app-settings-show')">
+          <IconElement icon="settings" class="menu-icon" /> Settings...
+        </MenubarItem>
+        <MenubarSeparator />
         <MenubarItem @click="$emit('window-new')">
           <IconElement icon="newWindow" class="menu-icon" /> New Window
         </MenubarItem>
@@ -71,12 +76,9 @@ defineEmits<{
       </MenubarContent>
     </MenubarMenu>
     <MenubarMenu>
-      <MenubarTrigger>Generation Settings</MenubarTrigger>
+      <MenubarTrigger>Generation</MenubarTrigger>
       <MenubarContent>
-        <MenubarItem @click="$emit('gensettings-toggle-window')">
-          <IconElement icon="settings" class="menu-icon" /> Change Settings...
-        </MenubarItem>
-        <MenubarSeparator />
+        <MenubarItem @click="$emit('gensettings-toggle-window')"> Parameters... </MenubarItem>
         <MenubarSub>
           <MenubarSubTrigger>Presets</MenubarSubTrigger>
           <MenubarSubContent>

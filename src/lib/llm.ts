@@ -2,7 +2,6 @@ import { Logger } from "./logger";
 import type z from "zod";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
-const LLAMAFILE_SERVER = "https://pathfinder.tail6959.ts.net:5002";
 const logger = new Logger("llm");
 
 export interface CompletionOptions {
@@ -41,82 +40,58 @@ export interface CompletionOptions {
   onToken?: (token: string) => void;
 }
 
-class RequestQueue {
-  private queue: (() => Promise<void>)[] = [];
-  private isProcessing: boolean = false;
-
-  add(task: () => Promise<void>) {
-    this.queue.push(task);
-    this.processQueue();
-  }
-
-  private async processQueue() {
-    if (this.isProcessing) return;
-    this.isProcessing = true;
-
-    while (this.queue.length > 0) {
-      const task = this.queue.shift()!;
-      try {
-        await task();
-      } catch (error) {
-        console.error("Error processing task:", error);
-      }
-    }
-
-    this.isProcessing = false;
-  }
-}
-
-const queue = new RequestQueue();
-
+/**
+ * Requests a text completion from the language model server.
+ * @param options Generation parameters options
+ * @param serverUrl Server to contact for generating the completion
+ * @param signal Optional AbortSignal for canceling the request
+ * @returns The resulting completion string
+ */
 export async function requestCompletion(
   options: CompletionOptions,
+  serverUrl: string,
   signal?: AbortSignal
 ): Promise<string> {
-  console.log(options);
-  return new Promise((resolve, reject) => {
-    queue.add(async () => {
-      try {
-        logger.debug("Requesting completion", options);
+  try {
+    logger.debug("Requesting completion", options);
 
-        const tokens: string[] = [];
+    const tokens: string[] = [];
 
-        await fetchEventSource(`${LLAMAFILE_SERVER}/completion`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            stream: true,
-            cache_prompt: true,
-            ...options,
-          }),
-          signal,
-          onmessage({ data }) {
-            const { content } = JSON.parse(data) as { content: string };
+    await fetchEventSource(`${serverUrl}/completion`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        stream: true,
+        cache_prompt: true,
+        ...options,
+      }),
+      signal,
+      onmessage({ data }) {
+        const { content } = JSON.parse(data) as { content: string };
 
-            if (content) {
-              tokens.push(content);
+        if (content) {
+          tokens.push(content);
 
-              if (options.onToken) {
-                options.onToken(content);
-              }
-            }
-          },
-        });
-
-        logger.info("Response:", tokens.join(""));
-
-        resolve(tokens.join(""));
-      } catch (error) {
-        if ((error as Error).name === "AbortError") {
-          logger.info("Request aborted");
-        } else {
-          reject(error);
+          if (options.onToken) {
+            options.onToken(content);
+          }
         }
-      }
+      },
     });
-  });
+
+    logger.info("Response:", tokens.join(""));
+
+    return tokens.join("");
+  } catch (error) {
+    if ((error as Error).name === "AbortError") {
+      logger.info("Request aborted");
+      return "";
+    } else {
+      throw error;
+    }
+  }
 }
 
 /**
@@ -126,59 +101,48 @@ export async function requestCompletion(
  */
 export async function countTokens(
   input: string,
+  serverUrl: string,
   options?: {
+    signal?: AbortSignal;
     considerEosToken?: boolean;
   }
 ): Promise<number> {
-  return new Promise((resolve, reject) => {
-    queue.add(async () => {
-      try {
-        const response = await fetch(`${LLAMAFILE_SERVER}/tokenize`, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({ content: input, add_special: options?.considerEosToken ?? false }),
-        }).then((r) => r.json());
+  const response = await fetch(`${serverUrl}/tokenize`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ content: input, add_special: options?.considerEosToken ?? false }),
+    signal: options?.signal,
+  }).then((r) => r.json());
 
-        resolve(response.tokens.length);
-      } catch (error) {
-        reject(error);
-      }
-    });
-  });
+  return response.tokens.length;
 }
 
-export async function createEmbedding(input: string) {
-  return new Promise((resolve, reject) => {
-    queue.add(async () => {
-      const localLogger = logger.local("createEmbedding");
-      try {
-        const response = await fetch(`${LLAMAFILE_SERVER}/embedding`, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({ content: input }),
-        }).then((r) => r.json());
+/**
+ * Tests if the server is responsive.
+ */
+export async function testServer(serverUrl: string, signal?: AbortSignal) {
+  try {
+    // Send an easy tokenization request. If the result is successful, the server is alive.
+    await fetch(`${serverUrl}/tokenize`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ content: "" }),
+      signal: signal,
+    }).then((r) => r.json());
 
-        resolve(new Float32Array(response.embedding as number[]));
-      } catch (exception) {
-        if ((exception as Error).name === "NetworkError") {
-          localLogger.error("Embedding creation failed with a NetworkError:", exception);
-          localLogger.error("... Since it's a NetworkError, I'm trying again...");
-          resolve(await createEmbedding(input));
-        }
-
-        localLogger.error("Embedding creation failed with an unknown error:", exception);
-        reject(exception);
-      }
-    });
-  });
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
 export async function promptChain(
-  generations: ((previousOutput: string) => CompletionOptions | Promise<CompletionOptions>)[]
+  generations: ((previousOutput: string) => CompletionOptions | Promise<CompletionOptions>)[],
+  serverUrl: string
 ) {
   const chainLogger = logger.local("promptChain");
   let previousOutput = "";
@@ -186,7 +150,7 @@ export async function promptChain(
   for (let i = 0; i < generations.length; i++) {
     chainLogger.info(`Chain: ${i + 1}/${generations.length}`);
     const generation = generations[i];
-    previousOutput = await requestCompletion(await generation(previousOutput));
+    previousOutput = await requestCompletion(await generation(previousOutput), serverUrl);
   }
 
   return previousOutput;
@@ -221,6 +185,7 @@ export async function parseJsonFromOutput<Schema extends z.Schema>(
 
 export async function countTokensSequential(
   inputs: string[],
+  serverUrl: string,
   options?: {
     considerEosToken?: boolean;
   }
@@ -228,7 +193,7 @@ export async function countTokensSequential(
   const counts: number[] = [];
 
   for (const input of inputs) {
-    counts.push(await countTokens(input, options));
+    counts.push(await countTokens(input, serverUrl, options));
   }
 
   return counts;

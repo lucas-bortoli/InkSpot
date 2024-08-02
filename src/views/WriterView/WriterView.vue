@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import GenerationParametersWindow from "./components/GenerationParametersWindow.vue";
+import GenerationParametersWindow from "./components/GenerationParametersWindow/GenerationParametersWindow.vue";
 import TextPad from "./components/TextPad.vue";
 import * as FileIO from "@/lib/file_io";
 import * as llm from "@/lib/llm";
@@ -20,8 +20,11 @@ import {
   loadProject,
   exportProjectHtml,
 } from "@/lib/project_manager";
+import SettingsModal from "./components/SettingsModal/SettingsModal.vue";
+import { getSettings } from "@/lib/settings";
 
-const isSettingsVisible = ref(false);
+const isGenerationParametersVisible = ref(false);
+const isAppSettingsVisible = ref(false);
 
 const editorContents = ref("");
 const editorPadding = ref<"compact" | "comfortable" | "comfortable-2x">("comfortable");
@@ -83,7 +86,9 @@ const tokenUsage = ref(0);
 debounceWatch(
   editorContents,
   async () => {
-    tokenUsage.value = await llm.countTokens(editorContents.value, { considerEosToken: false });
+    tokenUsage.value = await llm.countTokens(editorContents.value, getSettings().serverUrl, {
+      considerEosToken: false,
+    });
   },
   500
 );
@@ -107,11 +112,12 @@ const editorStyle = computed(() => {
       @project-new="newFile"
       @project-open="loadFile"
       @project-save="saveFile"
-      @gensettings-toggle-window="isSettingsVisible = !isSettingsVisible"
+      @gensettings-toggle-window="isGenerationParametersVisible = !isGenerationParametersVisible"
       @gensettings-load-preset="loadGenSettingsPreset"
       @window-new="openNewWindow"
       @editor-padding="setPadding"
-      @project-export="exportProject" />
+      @project-export="exportProject"
+      @app-settings-show="isAppSettingsVisible = true" />
     <div class="mx-auto h-[calc(100%-2.5em)] overflow-y-auto" :class="editorStyle">
       <!-- Unbounded height, allowing infinite scroll in the parent container -->
       <div>
@@ -119,9 +125,12 @@ const editorStyle = computed(() => {
         <TextPad v-model="editorContents" @keybind-save="saveFile" @keybind-open="loadFile" />
       </div>
     </div>
-    <GenerationParametersWindow :visible="isSettingsVisible" @close="isSettingsVisible = false" />
+    <GenerationParametersWindow
+      :visible="isGenerationParametersVisible"
+      @close="isGenerationParametersVisible = false" />
     <span class="fixed bottom-4 right-4 select-none text-sm text-zinc-700"
       >{{ tokenUsage }} tokens</span
     >
+    <SettingsModal :open="isAppSettingsVisible" @dismiss="isAppSettingsVisible = false" />
   </main>
 </template>
