@@ -51,6 +51,10 @@ defineEmits<{
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSeparator />
+        <MenubarItem @click="$emit('app-settings-show')">
+          <IconElement icon="settings" class="menu-icon" /> Settings...
+        </MenubarItem>
+        <MenubarSeparator />
         <MenubarItem @click="$emit('window-new')">
           <IconElement icon="newWindow" class="menu-icon" /> New Window
         </MenubarItem>
@@ -72,11 +76,9 @@ defineEmits<{
       </MenubarContent>
     </MenubarMenu>
     <MenubarMenu>
-      <MenubarTrigger>Settings</MenubarTrigger>
+      <MenubarTrigger>Generation</MenubarTrigger>
       <MenubarContent>
-        <MenubarItem @click="$emit('gensettings-toggle-window')">
-          <IconElement icon="settings" class="menu-icon" /> Change Generation Settings...
-        </MenubarItem>
+        <MenubarItem @click="$emit('gensettings-toggle-window')"> Parameters... </MenubarItem>
         <MenubarSub>
           <MenubarSubTrigger>Presets</MenubarSubTrigger>
           <MenubarSubContent>
@@ -88,10 +90,6 @@ defineEmits<{
             </MenubarItem>
           </MenubarSubContent>
         </MenubarSub>
-        <MenubarSeparator />
-        <MenubarItem @click="$emit('app-settings-show')">
-          <IconElement icon="settings" class="menu-icon" /> Change Application Settings...
-        </MenubarItem>
       </MenubarContent>
     </MenubarMenu>
   </Menubar>

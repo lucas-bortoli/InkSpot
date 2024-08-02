@@ -60,9 +60,7 @@ export const useGenerationParametersStore = defineStore("generation_parameters",
   const parameters = ref<GenerationParameters>(defaultParameters);
   const paramsKey = ref([Date.now()]);
 
-  function formatToApi(
-    params: GenerationParameters
-  ): Omit<LlamaCppCompletionOptions, "prompt" | "server_url"> {
+  function formatToApi(params: GenerationParameters): Omit<LlamaCppCompletionOptions, "prompt"> {
     return {
       temperature: params.temperature,
       top_k: params.topK ?? 0,

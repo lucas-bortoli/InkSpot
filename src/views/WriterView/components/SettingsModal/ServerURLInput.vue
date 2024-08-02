@@ -30,14 +30,15 @@ debounceWatch(
 
     validation.value = validUrl ? "VALID" : "INVALID";
   },
-  200
+  200,
+  { immediate: true }
 );
 </script>
 
 <template>
-  <div class="col-span-full flex flex-col gap-2 p-4 pb-0">
+  <div class="col-span-full flex flex-col gap-2">
     <Label class="flex items-start gap-2">
-      <span class="grow">llamafile Server URL</span>
+      <span class="grow">llama.cpp Server URL</span>
       <span class="text-zinc-500" v-if="validation === 'TESTING'">Testing...</span>
       <span class="text-zinc-500" v-else-if="validation === 'VALID'">Valid URL</span>
       <span class="text-red-600" v-else>Invalid URL</span>

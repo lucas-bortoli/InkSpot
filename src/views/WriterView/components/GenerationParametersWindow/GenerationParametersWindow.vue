@@ -30,7 +30,6 @@ const paramsStore = useGenerationParametersStore();
 const visibleSections = ref<("sampling" | "repetition")[]>(["sampling", "repetition"]);
 
 // These initial values don't matter, we immediately override them
-const serverUrl = ref("");
 const temperature = ref([0.6]);
 const topK = ref([40]);
 const minP = ref([0.05]);
@@ -47,7 +46,6 @@ setValues(paramsStore.parameters);
 
 function setValues(vals: GenerationParameters) {
   // paramsStore.parameters = vals;
-  serverUrl.value = vals.serverUrl;
   temperature.value = [vals.temperature];
   topK.value = [vals.topK ?? 0];
   minP.value = [vals.minP ?? 0];
@@ -68,7 +66,6 @@ function setValues(vals: GenerationParameters) {
 // We don't use the store directly in the component because shadcn sliders expect an array for their v-model value
 watchEffect(() => {
   const newParams: GenerationParameters = {
-    serverUrl: serverUrl.value,
     temperature: temperature.value[0],
     topK: topK.value[0] === 0 ? null : topK.value[0],
     minP: minP.value[0] === 0 ? null : minP.value[0],

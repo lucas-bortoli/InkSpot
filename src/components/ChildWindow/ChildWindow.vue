@@ -31,7 +31,7 @@ function handleCloseButton() {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport to="#child-window-container">
     <Transition>
       <div
         ref="$window"
